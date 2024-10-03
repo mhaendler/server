@@ -742,21 +742,25 @@ class Manager extends PublicEmitter implements IUserManager {
 	/**
 	 * Gets the list of user ids sorted by lastLogin, from most recent to least recent
 	 *
-	 * @param int|null $limit how many users to fetch
+	 * @param int|null $limit how many users to fetch (default: 25, max: 100)
 	 * @param int $offset from which offset to fetch
 	 * @param string $search search users based on search params
 	 * @return list<string> list of user IDs
 	 */
 	public function getLastLoggedInUsers(?int $limit = null, int $offset = 0, string $search = ''): array {
+		// We can't load all users who already logged in
+		$limit = min(100, $limit ?: 25);
+
 		$connection = \OC::$server->getDatabaseConnection();
 		$queryBuilder = $connection->getQueryBuilder();
 		$queryBuilder->select('login.userid')
 			->from('preferences', 'login')
 			->where($queryBuilder->expr()->eq('login.appid', $queryBuilder->expr()->literal('login')))
 			->andWhere($queryBuilder->expr()->eq('login.configkey', $queryBuilder->expr()->literal('lastLogin')))
-			->orderBy('login.configvalue', 'DESC')
 			->setFirstResult($offset)
-			->setMaxResults($limit);
+			->setMaxResults($limit)
+			->orderBy('login.configvalue', 'DESC')
+			->addOrderBy($queryBuilder->func()->lower('login.userid'), 'ASC');
 
 		if ($search !== '') {
 			$displayNameMatches = $this->searchDisplayName($search);
