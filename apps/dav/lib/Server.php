@@ -52,6 +52,7 @@ use OCA\DAV\SystemTag\SystemTagPlugin;
 use OCA\DAV\Upload\ChunkingPlugin;
 use OCA\DAV\Upload\ChunkingV2Plugin;
 use OCA\Theming\ThemingDefaults;
+use OCP\Activity\IManager;
 use OCP\AppFramework\Http\Response;
 use OCP\Diagnostics\IEventLogger;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -61,6 +62,7 @@ use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IPreview;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Profiler\IProfiler;
 use OCP\SabrePluginEvent;
@@ -241,10 +243,11 @@ class Server {
 			$this->server->addPlugin(new ViewOnlyPlugin(
 				\OC::$server->getUserFolder(),
 			));
-
 			// custom properties plugin must be the last one
 			$userSession = \OC::$server->getUserSession();
 			$user = $userSession->getUser();
+			$dispatcher = \OC::$server->get(IEventDispatcher::class);
+			$activityManager = \OC::$server->get(IManager::class);
 			if ($user !== null) {
 				$view = \OC\Files\Filesystem::getView();
 				$config = \OCP\Server::get(IConfig::class);
@@ -277,9 +280,11 @@ class Server {
 					$this->server->addPlugin(
 						new QuotaPlugin($view));
 				}
+
+				// if (!$user instanceOf IUser )
 				$this->server->addPlugin(
 					new TagsPlugin(
-						$this->server->tree, \OC::$server->getTagManager()
+						$this->server->tree, \OC::$server->getTagManager(), $userSession, $dispatcher, $activityManager
 					)
 				);
 
