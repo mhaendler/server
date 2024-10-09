@@ -75,16 +75,32 @@
 
 		<!-- Empty content placeholder -->
 		<template v-else-if="!loading && isEmptyDir">
-			<div v-if="currentView?.emptyView" class="files-list__empty-view-wrapper">
+			<!-- Empty due to error -->
+			<NcEmptyContent v-if="error" :name="error" data-cy-files-content-error>
+				<template #action>
+					<NcButton type="secondary" @click="fetchContent">
+						<template #icon>
+							<IconReload :size="20" />
+						</template>
+						{{ t('files', 'Reload') }}
+					</NcButton>
+				</template>
+				<template #icon>
+					<IconAlertCircleOutline />
+				</template>
+			</NcEmptyContent>
+			<!-- Custom empty view -->
+			<div v-else-if="currentView?.emptyView" class="files-list__empty-view-wrapper">
 				<div ref="customEmptyView" />
 			</div>
+			<!-- Default empty directory view -->
 			<NcEmptyContent v-else
 				:name="currentView?.emptyTitle || t('files', 'No files in here')"
 				:description="currentView?.emptyCaption || t('files', 'Upload some content or sync with your devices!')"
 				data-cy-files-content-empty>
 				<template v-if="directory !== '/'" #action>
 					<!-- Uploader -->
-					<UploadPicker v-if="currentFolder && canUpload && !isQuotaExceeded"
+					<UploadPicker v-if="canUpload && !isQuotaExceeded"
 						allow-folders
 						class="files-list__header-upload-button"
 						:content="getContent"
@@ -93,10 +109,7 @@
 						multiple
 						@failed="onUploadFail"
 						@uploaded="onUpload" />
-					<NcButton v-else
-						:aria-label="t('files', 'Go to the previous folder')"
-						:to="toPreviousDir"
-						type="primary">
+					<NcButton v-else :to="toPreviousDir" type="primary">
 						{{ t('files', 'Go back') }}
 					</NcButton>
 				</template>
@@ -118,6 +131,7 @@
 <script lang="ts">
 import type { ContentsWithRoot, INode } from '@nextcloud/files'
 import type { Upload } from '@nextcloud/upload'
+import type { AxiosError } from '@nextcloud/axios'
 import type { CancelablePromise } from 'cancelable-promise'
 import type { ComponentPublicInstance } from 'vue'
 import type { Route } from 'vue-router'
@@ -134,6 +148,8 @@ import { UploadPicker, UploadStatus } from '@nextcloud/upload'
 import { loadState } from '@nextcloud/initial-state'
 import { defineComponent } from 'vue'
 
+import IconAlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import IconReload from 'vue-material-design-icons/Reload.vue'
 import LinkIcon from 'vue-material-design-icons/Link.vue'
 import ListViewIcon from 'vue-material-design-icons/FormatListBulletedSquare.vue'
 import NcAppContent from '@nextcloud/vue/dist/Components/NcAppContent.js'
@@ -182,6 +198,8 @@ export default defineComponent({
 		AccountPlusIcon,
 		UploadPicker,
 		ViewGridIcon,
+		IconAlertCircleOutline,
+		IconReload,
 	},
 
 	mixins: [
@@ -234,6 +252,7 @@ export default defineComponent({
 	data() {
 		return {
 			loading: true,
+			error: null as string | null,
 			promise: null as CancelablePromise<ContentsWithRoot> | Promise<ContentsWithRoot> | null,
 
 			dirContentsFiltered: [] as INode[],
@@ -410,7 +429,7 @@ export default defineComponent({
 
 		showCustomEmptyView() {
 			return !this.loading && this.isEmptyDir && this.currentView?.emptyView !== undefined
-		}
+		},
 	},
 
 	watch: {
@@ -489,6 +508,7 @@ export default defineComponent({
 	methods: {
 		async fetchContent() {
 			this.loading = true
+			this.error = null
 			const dir = this.directory
 			const currentView = this.currentView
 
@@ -537,6 +557,22 @@ export default defineComponent({
 				})
 			} catch (error) {
 				logger.error('Error while fetching content', { error })
+				if (error instanceof Error) {
+					const status = ('status' in error && error.status as number) || ('response' in error && (error.response as AxiosError).status) || 0
+					if ([400, 404, 405].includes(status)) {
+						this.error = t('files', 'Folder not found')
+					} else if (status === 403) {
+						this.error = t('files', 'This operation is forbidden')
+					} else if (status === 500) {
+						this.error = t('files', 'This directory is unavailable, please check the logs or contact the administrator')
+					} else if (status === 503) {
+						this.error = t('files', 'Storage is temporarily not available')
+					} else {
+						this.error = t('files', 'Unexpected error: {error}', { error: error.message })
+					}
+				} else {
+					this.error = t('files', 'Unknown error')
+				}
 			} finally {
 				this.loading = false
 			}
