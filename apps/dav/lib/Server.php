@@ -46,6 +46,7 @@ use OCA\DAV\Events\SabrePluginAddEvent;
 use OCA\DAV\Events\SabrePluginAuthInitEvent;
 use OCA\DAV\Files\ErrorPagePlugin;
 use OCA\DAV\Files\LazySearchBackend;
+use OCA\DAV\Paginate\PaginatePlugin;
 use OCA\DAV\Profiler\ProfilerPlugin;
 use OCA\DAV\Provisioning\Apple\AppleProvisioningPlugin;
 use OCA\DAV\SystemTag\SystemTagPlugin;
@@ -215,6 +216,7 @@ class Server {
 			$logger,
 			$eventDispatcher,
 		));
+		$this->server->addPlugin(\OCP\Server::get(PaginatePlugin::class));
 
 		// allow setup of additional plugins
 		$eventDispatcher->dispatch('OCA\DAV\Connector\Sabre::addPlugin', $event);
