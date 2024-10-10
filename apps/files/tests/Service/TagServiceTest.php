@@ -83,11 +83,8 @@ class TagServiceTest extends \Test\TestCase {
 	protected function getTagService(array $methods = []) {
 		return $this->getMockBuilder(TagService::class)
 			->setConstructorArgs([
-				$this->userSession,
-				$this->activityManager,
 				$this->tagger,
 				$this->root,
-				$this->dispatcher,
 			])
 			->setMethods($methods)
 			->getMock();
@@ -146,12 +143,12 @@ class TagServiceTest extends \Test\TestCase {
 		$subdir = $this->root->newFolder('subdir');
 		$file = $subdir->newFile('test.txt');
 
-		$this->tagService->expects($this->exactly(2))
-			->method('addActivity')
-			->withConsecutive(
-				[true, $file->getId(), 'subdir/test.txt'],
-				[false, $file->getId(), 'subdir/test.txt']
-			);
+		$this->tagService->expects($this->exactly(1))
+			->method('addToFavorites')
+			->with($file->getId(), 'subdir/test.txt');
+		$this->tagService->expects($this->exactly(1))
+			->method('removeFromFavorites')
+			->with($file->getId(), 'subdir/test.txt');
 
 		// set tags
 		$this->tagService->updateFileTags('subdir/test.txt', [ITags::TAG_FAVORITE]);

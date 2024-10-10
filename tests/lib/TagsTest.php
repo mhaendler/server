@@ -7,6 +7,8 @@
 
 namespace Test;
 
+use OC\EventDispatcher\EventDispatcher;
+use OCP\Activity\IManager;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -48,7 +50,7 @@ class TagsTest extends \Test\TestCase {
 
 		$this->objectType = $this->getUniqueID('type_');
 		$this->tagMapper = new \OC\Tagging\TagMapper(\OC::$server->get(IDBConnection::class));
-		$this->tagMgr = new \OC\TagManager($this->tagMapper, $this->userSession, \OC::$server->get(IDBConnection::class), \OC::$server->get(LoggerInterface::class));
+		$this->tagMgr = new \OC\TagManager($this->tagMapper, $this->userSession, \OC::$server->get(EventDispatcher::class), \OC::$server->get(IManager::class), \OC::$server->get(IDBConnection::class), \OC::$server->get(LoggerInterface::class));
 	}
 
 	protected function tearDown(): void {
@@ -65,7 +67,7 @@ class TagsTest extends \Test\TestCase {
 			->expects($this->any())
 			->method('getUser')
 			->willReturn(null);
-		$this->tagMgr = new \OC\TagManager($this->tagMapper, $this->userSession, \OC::$server->getDatabaseConnection(), \OC::$server->get(LoggerInterface::class));
+		$this->tagMgr = new \OC\TagManager($this->tagMapper, $this->userSession, \OC::$server->get(EventDispatcher::class), \OC::$server->get(IManager::class), \OC::$server->getDatabaseConnection(), \OC::$server->get(LoggerInterface::class));
 		$this->assertNull($this->tagMgr->load($this->objectType));
 	}
 
