@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { getCurrentUser } from '@nextcloud/auth'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { emit } from '@nextcloud/event-bus'
 import { fetchNode } from '../services/WebdavClient.ts'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { getCurrentUser } from '@nextcloud/auth'
-// eslint-disable-next-line import/no-unresolved, n/no-missing-import
+
 import PQueue from 'p-queue'
 import debounce from 'debounce'
 
@@ -316,11 +316,17 @@ export default {
 
 						// clear any previous errors
 						this.$delete(this.errors, propertyNames[0])
-						showSuccess(t('files_sharing', 'Share {propertyName} saved', { propertyName: propertyNames[0] }))
-					} catch ({ message }) {
+						showSuccess(this.updateSuccessMessage(propertyNames))
+					} catch (error) {
+						logger.error('Could not update share', { error, share: this.share, propertyNames })
+
+						const { message } = error
 						if (message && message !== '') {
 							this.onSyncError(propertyNames[0], message)
-							showError(t('files_sharing', message))
+							showError(message)
+						} else {
+							// We do not have information what happened, but we should still inform the user
+							showError(t('files_sharing', 'Could not update share'))
 						}
 					} finally {
 						this.saving = false
@@ -331,6 +337,32 @@ export default {
 
 			// This share does not exists on the server yet
 			console.debug('Updated local share', this.share)
+		},
+
+		/**
+		 * @param {string[]} names Properties changed
+		 */
+		updateSuccessMessage(names) {
+			if (names.length !== 1) {
+				return t('files_sharing', 'Share saved')
+			}
+
+			switch (names[0]) {
+				case 'expireDate':
+					return t('files_sharing', 'Share expire date saved')
+				case 'hideDownload':
+					return t('files_sharing', 'Share hide-password state saved')
+				case 'label':
+					return t('files_sharing', 'Share label saved')
+				case 'note':
+					return t('files_sharing', 'Share note for recipient saved')
+				case 'password':
+					return t('files_sharing', 'Share password saved')
+				case 'permissions':
+					return t('files_sharing', 'Share permissions saved')
+				default:
+					return t('files_sharing', 'Share saved')
+			}
 		},
 
 		/**
