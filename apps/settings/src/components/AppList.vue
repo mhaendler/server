@@ -168,10 +168,10 @@ export default {
 			return this.apps.filter(app => app.update).length
 		},
 		loading() {
-			if (!this.$store.getters['app_api_apps/isAppApiEnabled']) {
+			if (!this.$store.getters['appApiApps/isAppApiEnabled']) {
 				return this.$store.getters.loading('list')
 			}
-			return this.$store.getters.loading('list') || this.$store.getters['app_api_apps/loading']('list')
+			return this.$store.getters.loading('list') || this.$store.getters['appApiApps/loading']('list')
 		},
 		hasPendingUpdate() {
 			return this.apps.filter(app => app.update).length > 0
@@ -181,7 +181,7 @@ export default {
 		},
 		apps() {
 			// Exclude ExApps from the list if AppAPI is disabled
-			const exApps = this.$store.getters.isAppApiEnabled ? this.$store.getters['app_api_apps/getAllApps'] : []
+			const exApps = this.$store.getters.isAppApiEnabled ? this.$store.getters['appApiApps/getAllApps'] : []
 			const apps = [...this.$store.getters.getAllApps, ...exApps]
 				.filter(app => app.name.toLowerCase().search(this.search.toLowerCase()) !== -1)
 				.sort(function(a, b) {
@@ -310,13 +310,12 @@ export default {
 			this.apps
 				.filter(app => app.update)
 				.map(app => limit(() => {
-						let type = 'updateApp'
-						if (app?.app_api) {
-							type = 'app_api_apps/updateApp'
-						}
-						this.$store.dispatch(type, { appId: app.id })
-					}),
-				)
+					let type = 'updateApp'
+					if (app?.app_api) {
+						type = 'appApiApps/updateApp'
+					}
+					this.$store.dispatch(type, { appId: app.id })
+				}))
 		},
 	},
 }
