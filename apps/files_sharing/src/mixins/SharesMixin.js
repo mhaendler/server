@@ -351,7 +351,7 @@ export default {
 				case 'expireDate':
 					return t('files_sharing', 'Share expire date saved')
 				case 'hideDownload':
-					return t('files_sharing', 'Share hide-password state saved')
+					return t('files_sharing', 'Share hide-download state saved')
 				case 'label':
 					return t('files_sharing', 'Share label saved')
 				case 'note':
