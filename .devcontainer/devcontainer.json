@@ -21,7 +21,17 @@
 			"settings": {
 				"php.suggest.basic": false
 			}
-		}
+		},
+		"codespaces": {
+		      "repositories": {
+		        "mhaendler/server": {
+		          "permissions": "write-all"
+		        },
+		        "mhaendler/cookbook": {
+		          "permissions": "write-all"
+		        }
+		      }
+		    }
 	},
 	"workspaceFolder": "/var/www/html",
 	"remoteUser": "devcontainer"
